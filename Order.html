@@ -87,12 +87,12 @@
     function generateSummary() {
         const today = new Date();
         const dateStr = `${today.getMonth() + 1}/${today.getDate()}`;
-        let summary = ` ${dateStr} ${data[currentTab].name}\n`;
+        let summary = ` ${dateStr} ${data[currentTab].name}`;
         
         let hasItems = false;
         data[currentTab].items.forEach(item => {
             if (counts[item] > 0) {
-                summary += `${item} x ${counts[item]}\n`;
+                summary += `\n${item} x ${counts[item]}`;
                 hasItems = true;
             }
         });
