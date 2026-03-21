@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日點貨助手</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f4f7f6; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: #ddd; font-weight: bold; }
+        .tab-btn.active { background: #4CAF50; color: white; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .controls { display: flex; align-items: center; gap: 10px; }
+        .btn-qty { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ccc; background: white; cursor: pointer; }
+        .qty-val { min-width: 20px; text-align: center; font-weight: bold; }
+        .submit-btn { width: 100%; padding: 15px; background: #2196F3; color: white; border: none; border-radius: 8px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+        #result { margin-top: 20px; white-space: pre-wrap; background: #e9ecef; padding: 15px; border-radius: 8px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📦 每日點貨助手</h2>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('A')">A 果醬類</button>
+        <button class="tab-btn" onclick="switchTab('B')">B 水果類</button>
+    </div>
+
+    <div id="item-list"></div>
+
+    <button class="submit-btn" onclick="generateSummary()">✅ 確認送出並複製文字</button>
+    
+    <div id="result"></div>
+</div>
+
+<script>
+    // 這裡可以隨時擴充 C 項目或修改品項名稱
+    const data = {
+        'A': { name: '果醬類別', items: ['草莓果醬', '藍莓果醬', '巧克力醬', '花生醬'] },
+        'B': { name: '水果類別', items: ['蘋果', '香蕉', '奇異果', '檸檬'] }
+    };
+
+    let currentTab = 'A';
+    let counts = {};
+
+    // 初始化數據
+    function init() {
+        for (let cat in data) {
+            data[cat].items.forEach(item => { counts[item] = 0; });
+        }
+        render();
+    }
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.innerText.includes(tab));
+        });
+        render();
+    }
+
+    function changeQty(item, delta) {
+        counts[item] = Math.max(0, counts[item] + delta);
+        render();
+    }
+
+    function render() {
+        const listDiv = document.getElementById('item-list');
+        listDiv.innerHTML = '';
+        data[currentTab].items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <span>${item}</span>
+                <div class="controls">
+                    <button class="btn-qty" onclick="changeQty('${item}', -1)">-</button>
+                    <span class="qty-val">${counts[item]}</span>
+                    <button class="btn-qty" onclick="changeQty('${item}', 1)">+</button>
+                </div>
+            `;
+            listDiv.appendChild(row);
+        });
+    }
+
+    function generateSummary() {
+        const today = new Date();
+        const dateStr = `${today.getMonth() + 1}/${today.getDate()}`;
+        let summary = `今日日期 ${dateStr}、${data[currentTab].name}`;
+        
+        let hasItems = false;
+        data[currentTab].items.forEach(item => {
+            if (counts[item] > 0) {
+                summary += `、${item} x ${counts[item]}`;
+                hasItems = true;
+            }
+        });
+
+        if (!hasItems) {
+            alert('請至少選擇一個品項數量大於 0');
+            return;
+        }
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerText = summary;
+        resultDiv.style.display = 'block';
+
+        // 自動複製到剪貼簿
+        navigator.clipboard.writeText(summary).then(() => {
+            alert('內容已複製！可以直接貼到 Line 給夥伴囉：\n\n' + summary);
+        });
+    }
+
+    init();
+</script>
+
+</body>
+</html>
