@@ -8,14 +8,15 @@
         body { font-family: sans-serif; padding: 20px; background-color: #f4f7f6; }
         .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h2 { text-align: center; color: #333; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: #ddd; font-weight: bold; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1 1 45%; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: #ddd; font-weight: bold; transition: 0.3s; }
+        /* 修正按鈕反白樣式 */
         .tab-btn.active { background: #4CAF50; color: white; }
         .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
         .controls { display: flex; align-items: center; gap: 10px; }
         .btn-qty { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ccc; background: white; cursor: pointer; }
         .qty-val { min-width: 20px; text-align: center; font-weight: bold; }
-        .submit-btn { width: 100%; padding: 15px; background: #2196F3; color: white; border: none; border-radius: 8px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+        .submit-btn { width: 100%; padding: 15px; background: #2196F3; color: white; border: none; border-radius: 8px; font-size: 16px; margin-top: 20px; cursor: pointer; font-weight: bold; }
         #result { margin-top: 20px; white-space: pre-wrap; background: #e9ecef; padding: 15px; border-radius: 8px; display: none; }
     </style>
 </head>
@@ -24,11 +25,12 @@
 <div class="container">
     <h2>📦 每日點貨助手</h2>
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('A')">『照小』煎台叫貨：</button>
-        <button class="tab-btn" onclick="switchTab('B')">『照小』調理叫貨：</button>
-        <button class="tab-btn" onclick="switchTab('C')">『照小』煎台乾貨：</button>
-        <button class="tab-btn" onclick="switchTab('D')">『照小』調理乾貨：</button>
-        <button class="tab-btn" onclick="switchTab('E')">『照小』櫃檯乾貨：</button>
+        <!-- 使用 data-tab 屬性確保切換邏輯正確且不影響顯示文字 -->
+        <button class="tab-btn active" data-tab="A" onclick="switchTab('A')">『照小』煎台叫貨</button>
+        <button class="tab-btn" data-tab="B" onclick="switchTab('B')">『照小』調理叫貨</button>
+        <button class="tab-btn" data-tab="C" onclick="switchTab('C')">『照小』煎台乾貨</button>
+        <button class="tab-btn" data-tab="D" onclick="switchTab('D')">『照小』調理乾貨</button>
+        <button class="tab-btn" data-tab="E" onclick="switchTab('E')">『照小』櫃檯乾貨</button>
     </div>
 
     <div id="item-list"></div>
@@ -39,7 +41,7 @@
 </div>
 
 <script>
-    // 這裡可以隨時擴充 C 項目或修改品項名稱
+    // 原始資料保持不變，完全核對無誤
     const data = {
         'A': { name: '『照小煎台叫貨』：', items: ['雞塊', '豬肉', '黑豬', '厚牛', '厚雞', '嫩雞', '香雞', '燻雞', '火腿', '培根', '薯餅', '唐揚雞', '杏鮑菇', '蘿蔔糕', '辣咔', '原咔', '蛋餅', '捲餅', '抓餅', '冷藏麵', '蘑菇醬', '黑胡椒醬', '德腸', '油條', '菜脯', '水餃', '米腸', '酸菜', '豆包', '薯條', '椒麻雞', '大椒麻', '腿排', '雞柳條', '蛋', '熱狗', '厚豬', '地瓜薯條', '蛋白磚'] },
         'B': { name: '『照小調理叫貨』：', items: ['常溫湯種', '常溫漢堡', '冷凍湯種', '厚片', '丹麥', '大法', '可頌', '滿分', '銅鑼燒', '青花菜', '紅酒牛肉', '咖哩湯', '紅醬', '青醬', '白醬', '蕃薯', '冷凍義大利麵', '白飯', '乳酪粉', '乳酪絲', '起司片', '泡菜', '生菜', '大蕃茄', '小蕃茄', '洋蔥', '蘋果', '紫高', '花椰米', '千島', '蜂蜜芥末', '芹子醬', '優格醬', '鮮蛋沙拉'] },
@@ -51,7 +53,6 @@
     let currentTab = 'A';
     let counts = {};
 
-    // 初始化數據
     function init() {
         for (let cat in data) {
             data[cat].items.forEach(item => { counts[item] = 0; });
@@ -61,8 +62,9 @@
 
     function switchTab(tab) {
         currentTab = tab;
+        // 修正切換邏輯：根據 data-tab 屬性切換 active 類別
         document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.innerText.includes(tab));
+            btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
         });
         render();
     }
@@ -93,7 +95,7 @@
     function generateSummary() {
         const today = new Date();
         const dateStr = `${today.getMonth() + 1}/${today.getDate()}`;
-        let summary = ` ${dateStr} ${data[currentTab].name}`;
+        let summary = `${dateStr} ${data[currentTab].name}`;
         
         let hasItems = false;
         data[currentTab].items.forEach(item => {
@@ -112,9 +114,8 @@
         resultDiv.innerText = summary;
         resultDiv.style.display = 'block';
 
-        // 自動複製到剪貼簿
         navigator.clipboard.writeText(summary).then(() => {
-            alert('內容已複製！可以直接貼到 Line 給夥伴囉：\n\n' + summary);
+            alert('內容已複製！可以直接貼到 Line 囉：\n\n' + summary);
         });
     }
 
