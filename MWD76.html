@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多工作站庫存盤點系統</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f7f9fa;
+            color: #333;
+            max-width: 650px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h2 {
+            text-align: center;
+            color: #444;
+            margin-bottom: 15px;
+        }
+        /* 分頁按鈕樣式 */
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background-color: #e5e7eb;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            color: #4b5563;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        
+        .input-group {
+            background: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .input-group label {
+            font-weight: bold;
+            font-size: 1.05em;
+            width: 140px;
+        }
+        .input-fields {
+            display: flex;
+            gap: 15px;
+        }
+        .input-field-item {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .input-field-item span {
+            font-size: 0.75em;
+            margin-bottom: 2px;
+        }
+        input[type="number"] {
+            width: 70px;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            text-align: center;
+        }
+        .label-green { color: #2e7d32; font-weight: bold; }
+        .label-red { color: #c62828; font-weight: bold; }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        
+        /* 截圖區塊樣式 */
+        #capture-area {
+            margin-top: 25px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+        }
+        #capture-area h3 {
+            text-align: center;
+            margin-top: 0;
+            color: #1f2937;
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 10px;
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .result-table th, .result-table td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.95em;
+        }
+        .result-table th {
+            font-weight: bold;
+            color: #4b5563;
+            background-color: #f9fafb;
+        }
+        /* 隔行變色，提升 50 項商品的閱讀清晰度 */
+        .result-table tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+        .res-green { color: #2e7d32; font-weight: bold; }
+        .res-red { color: #c62828; font-weight: bold; }
+        
+        .download-btn {
+            width: 100%;
+            background-color: #10b981;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>庫存盤點快速記錄系統</h2>
+
+    <!-- 分頁按鈕列 -->
+    <div class="tab-container" id="tab-buttons">
+        <!-- 由 JS 動態生成分頁按鈕 -->
+    </div>
+
+    <!-- 輸入區塊 -->
+    <div id="input-container"></div>
+
+    <button class="submit-btn" onclick="generateReport()">生成目前分頁的盤點報表</button>
+
+    <!-- 輸出與截圖區塊 -->
+    <div id="result-section" style="display:none;">
+        <div id="capture-area">
+            <h3 id="report-title">📋 盤點回報單</h3>
+            <div id="date-info" style="font-size: 0.85em; color: #6b7280; text-align: center; margin-bottom: 10px;"></div>
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>品項名稱</th>
+                        <th>現有數量</th>
+                        <th>需要數量</th>
+                    </tr>
+                </thead>
+                <tbody id="output-tbody"></tbody>
+            </table>
+        </div>
+        <button class="download-btn" onclick="downloadImage()">下載此分頁圖片傳給夥伴</button>
+    </div>
+
+<script>
+    // ==========================================
+    // 多分頁與商品資料設定區 (可在此擴充多個工作頁與50項商品)
+    // ==========================================
+    const categories = {
+        "A區_食材類": {
+            inputOrder: ["B - 草莓", "D - 花生", "C - 巧克力", "A - 香蒜"], // 之後可擴充至50個
+            outputOrder: ["A - 香蒜", "B - 草莓", "C - 巧克力", "D - 花生"]  // 排序後的樣貌
+        },
+        "B區_耗材類": {
+            inputOrder: ["丁 - 紙杯", "乙 - 吸管", "甲 - 紙袋", "丙 - 封口膜"], // 另一頁的輸入順序
+            outputOrder: ["甲 - 紙袋", "乙 - 吸管", "丙 - 封口膜", "丁 - 紙杯"] // 另一頁的輸出順序
+        }
+    };
+
+    let currentTab = Object.keys(categories)[0]; // 預設顯示第一個分頁
+    let inputValues = {}; // 記憶各分頁輸入過的值
+
+    // 初始化分頁按鈕
+    function initTabs() {
+        const tabContainer = document.getElementById('tab-buttons');
+        tabContainer.innerHTML = '';
+        
+        Object.keys(categories).forEach(categoryName => {
+            const btn = document.createElement('button');
+            btn.className = `tab-btn ${categoryName === currentTab ? 'active' : ''}`;
+            btn.innerText = categoryName;
+            btn.onclick = () => switchTab(categoryName);
+            tabContainer.appendChild(btn);
+        });
+        renderInputs();
+    }
+
+    // 切換分頁
+    function switchTab(categoryName) {
+        currentTab = categoryName;
+        initTabs();
+        document.getElementById('result-section').style.display = 'none'; // 切換時隱藏舊報表
+    }
+
+    // 渲染當前分頁的輸入框
+    function renderInputs() {
+        const container = document.getElementById('input-container');
+        container.innerHTML = '';
+        
+        const currentConfig = categories[currentTab];
+        
+        currentConfig.inputOrder.forEach(item => {
+            // 如果還沒有儲存過數值，就給預設空字串
+            if (!inputValues[currentTab]) inputValues[currentTab] = {};
+            if (!inputValues[currentTab][item]) inputValues[currentTab][item] = { stock: '', need: '' };
+
+            const val = inputValues[currentTab][item];
+
+            const group = document.createElement('div');
+            group.className = 'input-group';
+            group.innerHTML = `
+                <label>${item}</label>
+                <div class="input-fields">
+                    <div class="input-field-item">
+                        <span class="label-green">現有</span>
+                        <input type="number" id="stock_${item}" min="0" value="${val.stock}" placeholder="0" oninput="saveInputValue('${item}')">
+                    </div>
+                    <div class="input-field-item">
+                        <span class="label-red">需要</span>
+                        <input type="number" id="need_${item}" min="0" value="${val.need}" placeholder="0" oninput="saveInputValue('${item}')">
+                    </div>
+                </div>
+            `;
+            container.appendChild(group);
+        });
+    }
+
+    // 即時記憶輸入的值，切換分頁時才不會不見
+    function saveInputValue(item) {
+        if (!inputValues[currentTab]) inputValues[currentTab] = {};
+        inputValues[currentTab][item] = {
+            stock: document.getElementById(`stock_${item}`).value,
+            need: document.getElementById(`need_${item}`).value
+        };
+    }
+
+    // 生成報表
+    function generateReport() {
+        const currentConfig = categories[currentTab];
+        const currentData = inputValues[currentTab] || {};
+
+        document.getElementById('report-title').innerText = `📋 盤點回報單 (${currentTab})`;
+        
+        const now = new Date();
+        document.getElementById('date-info'].innerText = `回報時間：${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        let tbodyHtml = '';
+        currentConfig.outputOrder.forEach(item => {
+            const data = currentData[item] || { stock: 0, need: 0 };
+            tbodyHtml += `
+                <tr>
+                    <td style="font-weight: bold;">${item}</td>
+                    <td><span class="res-green">${data.stock || 0}</span></td>
+                    <td><span class="res-red">${data.need || 0}</span></td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('output-tbody').innerHTML = tbodyHtml;
+        document.getElementById('result-section').style.display = 'block';
+        document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // 下載圖片
+    function downloadImage() {
+        const captureElement = document.getElementById('capture-area');
+        html2canvas(captureElement, { scale: 2 }).then(canvas => {
+            const imageURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = imageURL;
+            link.download = `盤點表_${currentTab}_${new Date().toISOString().slice(0,10)}.png`;
+            link.click();
+        });
+    }
+
+    // 頁面初次載入
+    initTabs();
+</script>
+
+</body>
+</html>
