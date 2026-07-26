@@ -29,7 +29,7 @@
         }
         .tab-btn {
             flex: 1;
-            padding: 10px;
+            padding: 12px;
             background-color: #e5e7eb;
             border: none;
             border-radius: 8px;
@@ -46,9 +46,9 @@
         
         .input-group {
             background: #fff;
-            padding: 10px 15px;
+            padding: 12px 15px;
             border-radius: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.02);
             display: flex;
             align-items: center;
@@ -57,11 +57,12 @@
         .input-group label {
             font-weight: bold;
             font-size: 1.05em;
-            width: 140px;
+            width: 130px;
         }
         .input-fields {
             display: flex;
-            gap: 15px;
+            gap: 12px;
+            align-items: center;
         }
         .input-field-item {
             display: flex;
@@ -73,27 +74,38 @@
             margin-bottom: 2px;
         }
         input[type="number"] {
-            width: 70px;
+            width: 60px;
             padding: 6px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 1em;
             text-align: center;
         }
+        .skip-label {
+            font-size: 0.8em;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
         .label-green { color: #2e7d32; font-weight: bold; }
         .label-red { color: #c62828; font-weight: bold; }
 
         .submit-btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background-color: #4f46e5;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 1em;
+            font-size: 1.05em;
             font-weight: bold;
             cursor: pointer;
             margin-top: 15px;
+        }
+        .submit-btn:hover {
+            background-color: #4338ca;
         }
         
         /* 截圖區塊樣式 */
@@ -127,12 +139,12 @@
             color: #4b5563;
             background-color: #f9fafb;
         }
-        /* 隔行變色，提升 50 項商品的閱讀清晰度 */
         .result-table tr:nth-child(even) {
             background-color: #fcfcfc;
         }
         .res-green { color: #2e7d32; font-weight: bold; }
         .res-red { color: #c62828; font-weight: bold; }
+        .res-skip { color: #9ca3af; text-decoration: line-through; }
         
         .download-btn {
             width: 100%;
@@ -145,6 +157,9 @@
             cursor: pointer;
             margin-top: 15px;
         }
+        .download-btn:hover {
+            background-color: #059669;
+        }
     </style>
 </head>
 <body>
@@ -152,9 +167,7 @@
     <h2>庫存盤點快速記錄系統</h2>
 
     <!-- 分頁按鈕列 -->
-    <div class="tab-container" id="tab-buttons">
-        <!-- 由 JS 動態生成分頁按鈕 -->
-    </div>
+    <div class="tab-container" id="tab-buttons"></div>
 
     <!-- 輸入區塊 -->
     <div id="input-container"></div>
@@ -170,8 +183,9 @@
                 <thead>
                     <tr>
                         <th>品項名稱</th>
-                        <th>現有數量</th>
-                        <th>需要數量</th>
+                        <th>現有</th>
+                        <th>需要</th>
+                        <th>狀態備註</th>
                     </tr>
                 </thead>
                 <tbody id="output-tbody"></tbody>
@@ -181,24 +195,21 @@
     </div>
 
 <script>
-    // ==========================================
-    // 多分頁與商品資料設定區 (可在此擴充多個工作頁與50項商品)
-    // ==========================================
+    // 品項設定區（未來可在此擴充至 50 項）
     const categories = {
         "A區_食材類": {
-            inputOrder: ["B - 草莓", "D - 花生", "C - 巧克力", "A - 香蒜"], // 之後可擴充至50個
-            outputOrder: ["A - 香蒜", "B - 草莓", "C - 巧克力", "D - 花生"]  // 排序後的樣貌
+            inputOrder: ["B - 草莓", "D - 花生", "C - 巧克力", "A - 香蒜"],
+            outputOrder: ["A - 香蒜", "B - 草莓", "C - 巧克力", "D - 花生"]
         },
         "B區_耗材類": {
-            inputOrder: ["丁 - 紙杯", "乙 - 吸管", "甲 - 紙袋", "丙 - 封口膜"], // 另一頁的輸入順序
-            outputOrder: ["甲 - 紙袋", "乙 - 吸管", "丙 - 封口膜", "丁 - 紙杯"] // 另一頁的輸出順序
+            inputOrder: ["丁 - 紙杯", "乙 - 吸管", "甲 - 紙袋", "丙 - 封口膜"],
+            outputOrder: ["甲 - 紙袋", "乙 - 吸管", "丙 - 封口膜", "丁 - 紙杯"]
         }
     };
 
-    let currentTab = Object.keys(categories)[0]; // 預設顯示第一個分頁
-    let inputValues = {}; // 記憶各分頁輸入過的值
+    let currentTab = Object.keys(categories)[0];
+    let inputValues = {}; 
 
-    // 初始化分頁按鈕
     function initTabs() {
         const tabContainer = document.getElementById('tab-buttons');
         tabContainer.innerHTML = '';
@@ -213,14 +224,12 @@
         renderInputs();
     }
 
-    // 切換分頁
     function switchTab(categoryName) {
         currentTab = categoryName;
         initTabs();
-        document.getElementById('result-section').style.display = 'none'; // 切換時隱藏舊報表
+        document.getElementById('result-section').style.display = 'none';
     }
 
-    // 渲染當前分頁的輸入框
     function renderInputs() {
         const container = document.getElementById('input-container');
         container.innerHTML = '';
@@ -228,9 +237,10 @@
         const currentConfig = categories[currentTab];
         
         currentConfig.inputOrder.forEach(item => {
-            // 如果還沒有儲存過數值，就給預設空字串
             if (!inputValues[currentTab]) inputValues[currentTab] = {};
-            if (!inputValues[currentTab][item]) inputValues[currentTab][item] = { stock: '', need: '' };
+            if (!inputValues[currentTab][item]) {
+                inputValues[currentTab][item] = { stock: '', need: '', skip: false };
+            }
 
             const val = inputValues[currentTab][item];
 
@@ -247,22 +257,24 @@
                         <span class="label-red">需要</span>
                         <input type="number" id="need_${item}" min="0" value="${val.need}" placeholder="0" oninput="saveInputValue('${item}')">
                     </div>
+                    <label class="skip-label">
+                        <input type="checkbox" id="skip_${item}" ${val.skip ? 'checked' : ''} onchange="saveInputValue('${item}')"> 暫不訂購
+                    </label>
                 </div>
             `;
             container.appendChild(group);
         });
     }
 
-    // 即時記憶輸入的值，切換分頁時才不會不見
     function saveInputValue(item) {
         if (!inputValues[currentTab]) inputValues[currentTab] = {};
         inputValues[currentTab][item] = {
             stock: document.getElementById(`stock_${item}`).value,
-            need: document.getElementById(`need_${item}`).value
+            need: document.getElementById(`need_${item}`).value,
+            skip: document.getElementById(`skip_${item}`).checked
         };
     }
 
-    // 生成報表
     function generateReport() {
         const currentConfig = categories[currentTab];
         const currentData = inputValues[currentTab] || {};
@@ -270,16 +282,25 @@
         document.getElementById('report-title').innerText = `📋 盤點回報單 (${currentTab})`;
         
         const now = new Date();
-        document.getElementById('date-info'].innerText = `回報時間：${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+        document.getElementById('date-info').innerText = `回報時間：${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
         let tbodyHtml = '';
         currentConfig.outputOrder.forEach(item => {
-            const data = currentData[item] || { stock: 0, need: 0 };
+            const data = currentData[item] || { stock: 0, need: 0, skip: false };
+            
+            let statusHtml = '<span style="color: #059669;">正常訂購</span>';
+            let rowClass = '';
+            if (data.skip) {
+                statusHtml = '<span class="res-skip">暫不訂購</span>';
+                rowClass = 'style="background-color: #f3f4f6; color: #9ca3af;"';
+            }
+
             tbodyHtml += `
-                <tr>
+                <tr ${rowClass}>
                     <td style="font-weight: bold;">${item}</td>
                     <td><span class="res-green">${data.stock || 0}</span></td>
                     <td><span class="res-red">${data.need || 0}</span></td>
+                    <td>${statusHtml}</td>
                 </tr>
             `;
         });
@@ -289,7 +310,6 @@
         document.getElementById('result-section').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // 下載圖片
     function downloadImage() {
         const captureElement = document.getElementById('capture-area');
         html2canvas(captureElement, { scale: 2 }).then(canvas => {
@@ -301,7 +321,6 @@
         });
     }
 
-    // 頁面初次載入
     initTabs();
 </script>
 
