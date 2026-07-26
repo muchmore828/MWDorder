@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多工作站庫存盤點系統</title>
+    <title>麥味登文化店庫存盤點</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
@@ -164,7 +164,7 @@
 </head>
 <body>
 
-    <h2>庫存盤點快速記錄系統</h2>
+    <h2>庫存盤點</h2>
 
     <!-- 分頁按鈕列 -->
     <div class="tab-container" id="tab-buttons"></div>
@@ -197,11 +197,11 @@
 <script>
     // 品項設定區（未來可在此擴充至 50 項）
     const categories = {
-        "A區_食材類": {
+        "冷藏、冷凍類": {
             inputOrder: ["B - 草莓", "D - 花生", "C - 巧克力", "A - 香蒜"],
             outputOrder: ["A - 香蒜", "B - 草莓", "C - 巧克力", "D - 花生"]
         },
-        "B區_耗材類": {
+        "乾貨類": {
             inputOrder: ["丁 - 紙杯", "乙 - 吸管", "甲 - 紙袋", "丙 - 封口膜"],
             outputOrder: ["甲 - 紙袋", "乙 - 吸管", "丙 - 封口膜", "丁 - 紙杯"]
         }
